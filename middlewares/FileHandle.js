@@ -65,12 +65,12 @@ const form = formOnly.none();
 app.use((err, req, res, next) => {
     if (err) {
         if (err instanceof multer.MulterError) {
-            res.status(500).send('There was an upload error!')
+            res.status(500).json({ error: false, msg: 'There was an upload error!'})
         } else {
-            res.status(500).send(err.message)
+            res.status(500).json({  error: false, msg: err.message })
         }
     } else {
-        res.status(200).json({ "success"})
+        res.status(200).json({  error: true, msg: "success"})
     }
 
 })
