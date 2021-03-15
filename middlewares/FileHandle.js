@@ -43,7 +43,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
     storage: fileStorage,
     fileFilter: fileFilter,
-    limits: { fileSize: 1000000 } //1 MB
+    limits: { fileSize: 1000000 } //1 MB //count as a byte
 });
 
 const formOnly = multer();
