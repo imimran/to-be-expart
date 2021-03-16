@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(255),
         allowNull: false,
       },
-      user_url: {
+      website: {
         type: DataTypes.STRING(100),
         allowNull: true,
       },
@@ -53,8 +53,6 @@ module.exports = (sequelize, DataTypes) => {
 
 
   User.associate = models => {
-
-
     User.hasMany(models.UserExtention, {
       onDelete: "CASCADE",
       foreignKey: "user_id",

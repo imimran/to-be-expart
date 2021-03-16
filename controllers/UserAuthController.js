@@ -200,7 +200,7 @@ const register = async (req, res) => {
       meta_key: meta_key_8,
       meta_value,
     });
-   
+
     let meta_key_10 = "designation";
     await UserMeta.create({
       user_id: newUser.ID,
@@ -219,7 +219,7 @@ const register = async (req, res) => {
       meta_key: meta_key_12,
       meta_value,
     });
-   
+
     return res
       .status(201)
       .json({ error: false, msg: "User registerd Successfuly." });
@@ -260,7 +260,7 @@ const updateUser = async (req, res) => {
       dob,
       facebook_link,
       twitter_username,
-   
+
     } = req.body;
 
     if (
@@ -397,7 +397,7 @@ const updateUser = async (req, res) => {
       twitter_usernameinfo.meta_value = twitter_username;
       twitter_usernameinfo.save();
     }
-    
+
 
     return res.status(200).json({
       error: false,
@@ -462,7 +462,7 @@ const login = async (req, res) => {
           error: false,
           accessToken: token,
           user_info: payload.user,
-          
+
         });
       }
     );
@@ -482,4 +482,16 @@ const protect = (req, res) => {
   });
 };
 
-module.exports = { getAllUser, getUser, register, updateUser, login, protect };
+const verifyToken = (req, res) => {
+
+  const { token } = req.body
+  jwt.verify(token, process.env.JWTSECRET, (err, verifiedJwt) => {
+    if (err) {
+      return res.status(500).json({ valid: false })
+    } else
+      return res.status(200).json({ valid: true })
+  }
+  )
+}
+
+module.exports = { getAllUser, getUser, register, updateUser, login, protect, verifyToken };
