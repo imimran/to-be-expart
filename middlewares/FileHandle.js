@@ -1,12 +1,11 @@
 const multer = require('multer');
-const express = require('express')
 const path = require('path')
 
-const app = express()
+
 //configuring multer storage for images
 const fileStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'upload/');
+        cb(null, 'uploads/');
     },
     filename: (req, file, cb) => {
         // cb(null, new Date().toISOString().replace(/:/g, '-')
@@ -62,17 +61,6 @@ const uploadCoverPhoto = upload.single('cover_photo');
 const form = formOnly.none();
 
 //Multer Error Handle
-app.use((err, req, res, next) => {
-    if (err) {
-        if (err instanceof multer.MulterError) {
-            res.status(500).json({ error: false, msg: 'There was an upload error!'})
-        } else {
-            res.status(500).json({  error: false, msg: err.message })
-        }
-    } else {
-        res.status(200).json({  error: true, msg: "success"})
-    }
 
-})
 // app.use(multer({storage: fileStorage, fileFilter: fileFilter}).single('image'));
 module.exports = { multipleFile, multiFileUploader, uploadAvatar, uploadFile, uploadCoverPhoto, form }

@@ -6,7 +6,6 @@ const { Op } = require("sequelize");
 const { getMatchedValue } = require("../helpers/MatchPermission");
 const { UserExtention, User } = require("../utils/DB");
 
-//handler for register user....
 
 const getAllUser = async (req, res) => {
   try {
@@ -15,7 +14,7 @@ const getAllUser = async (req, res) => {
 
     const users = await User.findAll({
       attributes: [
-        "ID",
+        "id",
         "user_login",
         "user_email",
         "user_registered",
@@ -31,17 +30,17 @@ const getAllUser = async (req, res) => {
           },
         },
       ],
-      order: [["ID", "DESC"]],
+      order: [["id", "DESC"]],
     });
 
     let userData = [];
     for (let index = 0; index < users.length; index++) {
       let user = users[index];
       let role = getMatchedValue(
-        users[index].dataValues.bden_usermeta[0].dataValues.role,
+        users[index].dataValues.bden_UserExtention[0].dataValues.role,
         roles
       );
-      user.dataValues.bden_usermeta[0].dataValues.role = role;
+      user.dataValues.bden_UserExtention[0].dataValues.role = role;
       userData.push(user);
     }
 
@@ -55,11 +54,11 @@ const getAllUser = async (req, res) => {
 
 const getUser = async (req, res) => {
   try {
-    const userId = req.params.ID;
+    const userid = req.params.id;
     const user = await User.findOne({
-      where: { ID: userId },
+      where: { id: userid },
       attributes: [
-        "ID",
+        "id",
         "user_login",
         "user_email",
         "user_registered",
@@ -68,7 +67,7 @@ const getUser = async (req, res) => {
 
     });
 
-    const userMata_info = await UserMeta.findAll();
+    const userMata_info = await UserExtention.findAll();
 
     let userMata_info_arr = {};
 
@@ -92,42 +91,34 @@ const register = async (req, res) => {
   let {
     meta_key,
     meta_value,
-    user_login,
-    user_email,
-    user_pass,
-    user_url,
+    username,
+    email,
+    password,
+    website,
     first_name,
     last_name,
     role,
+    nickname,
     avatar,
 
   } = req.body;
 
   try {
     //checking email taken or not...
-    let user = await User.findOne({ where: { user_email: user_email } });
+    const user = await User.findOne({ where: { email: email } });
     if (user) {
       return res.status(400).json({ error: true, msg: "E-mail already taken" });
     }
-    let username = await User.findOne({ where: { user_login: user_login } });
-    if (username) {
+    const userName = await User.findOne({ where: { username: username } });
+    if (userName) {
       return res
         .status(400)
         .json({ error: true, msg: "Username already taken" });
     }
 
-    user_registered_date = moment().format("YYYY-MM-DD h:mm:ss");
+    const userRegistereDate = moment().format("YYYY-MM-DD h:mm:ss");
 
-    // if (!user_pass) {
-    //   const password = generator.generate({
-    //     length: 10,
-    //     numbers: true
-    //   });
-    //   user_pass = password;
-    //   console.log(password);
-    // }
-
-    user_pass = bcrypt.hashSync(user_pass, 12, (err, hash) => {
+    let userPassword = bcrypt.hashSync(password, 12, (err, hash) => {
       if (err) {
         throw err;
       }
@@ -135,97 +126,87 @@ const register = async (req, res) => {
     });
     //user create with credentials...
     const newUser = await User.create({
-      user_login,
-      user_pass: user_pass,
-      user_nicename: user_login,
-      user_email,
-      user_url,
-      user_registered: user_registered_date,
+      username,
+      password: userPassword,
+      nickname,
+      email,
+      website,
+      created_at: userRegistereDate,
       display_name: first_name + " " + last_name,
+      avatar: req.file.filename
     });
 
-    let meta_key_0 = "nickname";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_0,
-      meta_value: newUser.user_nicename,
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "nickname",
+      meta_value: newUser.nickname,
     });
 
-    let meta_key_1 = "first_name";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_1,
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "first_name",
       meta_value: first_name,
     });
 
-    let meta_key_2 = "last_name";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_2,
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "last_name",
       meta_value: last_name,
     });
 
-    let meta_key_3 = "description";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_3,
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "bio",
       meta_value,
     });
 
-    let bden_capabilities = "subscriber";
+    let permission = "subscriber";
     if (role) {
-      bden_capabilities = role;
+      permission = role;
     }
-    let meta_key_4 = "bden_capabilities";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_4,
-      meta_value: bden_capabilities,
+
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "permission",
+      meta_value: permission,
     });
-    let meta_key_6 = "avatar";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_6,
-      meta_value,
-    });
-    let meta_key_7 = "dob";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_7,
-      meta_value,
-    });
-    let meta_key_8 = "address";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_8,
+
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "avatar",
       meta_value,
     });
 
-    let meta_key_10 = "designation";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_10,
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "dob",
       meta_value,
     });
-    let meta_key_11 = "facebook_link";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_11,
+
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "address",
       meta_value,
     });
-    let meta_key_12 = "twitter_username";
-    await UserMeta.create({
-      user_id: newUser.ID,
-      meta_key: meta_key_12,
+
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "facebook",
+      meta_value,
+    });
+
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "twitter",
       meta_value,
     });
 
     return res
       .status(201)
       .json({ error: false, msg: "User registerd Successfuly." });
-  } catch (err) {
+  } catch (error) {
     //check for possible erros...
-    console.log(err);
+    console.log(error);
     res.status(500).json({ error: true, msg: "Server error." });
   }
 };
@@ -234,9 +215,9 @@ const updateUser = async (req, res) => {
   try {
     console.log("data", req.body);
 
-    const userId = req.params.ID;
-    //const userMetaId = req.params.user_id ;
-    let old_user = await User.findOne({ where: { ID: userId } });
+    const userid = req.params.id;
+    //const UserExtentionid = req.params.user_id ;
+    let old_user = await User.findOne({ where: { id: userid } });
 
     if (!old_user) {
       return res.status(200).json({ error: true, msg: "User not found." });
@@ -308,15 +289,15 @@ const updateUser = async (req, res) => {
 
     console.log("old_user", old_user.user_nicename);
 
-    let nicknameinfo = await UserMeta.findOne({
-      where: { meta_key: "nickname", user_id: userId },
+    let nicknameinfo = await UserExtention.findOne({
+      where: { meta_key: "nickname", user_id: userid },
     });
     nicknameinfo.meta_value = old_user.user_nicename;
     nicknameinfo.save();
 
     if (first_name) {
-      let first_nameinfo = await UserMeta.findOne({
-        where: { meta_key: "first_name", user_id: userId },
+      let first_nameinfo = await UserExtention.findOne({
+        where: { meta_key: "first_name", user_id: userid },
       });
       //console.log( 'first_nameinfo', first_nameinfo);
       if (first_nameinfo) {
@@ -326,23 +307,23 @@ const updateUser = async (req, res) => {
     }
 
     if (last_name) {
-      let last_nameinfo = await UserMeta.findOne({
-        where: { meta_key: "last_name", user_id: userId },
+      let last_nameinfo = await UserExtention.findOne({
+        where: { meta_key: "last_name", user_id: userid },
       });
       last_nameinfo.meta_value = last_name;
       last_nameinfo.save();
     }
     if (description) {
-      let descriptioninfo = await UserMeta.findOne({
-        where: { meta_key: "description", user_id: userId },
+      let descriptioninfo = await UserExtention.findOne({
+        where: { meta_key: "description", user_id: userid },
       });
       descriptioninfo.meta_value = description;
       descriptioninfo.save();
     }
 
     if (bden_capabilities) {
-      let bden_capabilitiesinfo = await UserMeta.findOne({
-        where: { meta_key: "bden_capabilities", user_id: userId },
+      let bden_capabilitiesinfo = await UserExtention.findOne({
+        where: { meta_key: "bden_capabilities", user_id: userid },
       });
       bden_capabilitiesinfo.meta_value = bden_capabilities;
       bden_capabilitiesinfo.save();
@@ -350,32 +331,32 @@ const updateUser = async (req, res) => {
 
     if (req.file) {
       console.log(req.file);
-      let avatarinfo = await UserMeta.findOne({
-        where: { meta_key: "avatar", user_id: userId },
+      let avatarinfo = await UserExtention.findOne({
+        where: { meta_key: "avatar", user_id: userid },
       });
       avatarinfo.meta_value = req.file.filename;
       avatarinfo.save();
     }
 
     if (phone) {
-      let phoneinfo = await UserMeta.findOne({
-        where: { meta_key: "phone", user_id: userId },
+      let phoneinfo = await UserExtention.findOne({
+        where: { meta_key: "phone", user_id: userid },
       });
       phoneinfo.meta_value = phone;
       phoneinfo.save();
     }
 
     if (address) {
-      let addressinfo = await UserMeta.findOne({
-        where: { meta_key: "address", user_id: userId },
+      let addressinfo = await UserExtention.findOne({
+        where: { meta_key: "address", user_id: userid },
       });
       addressinfo.meta_value = address;
       addressinfo.save();
     }
 
     if (dob) {
-      let dobinfo = await UserMeta.findOne({
-        where: { meta_key: "dob", user_id: userId },
+      let dobinfo = await UserExtention.findOne({
+        where: { meta_key: "dob", user_id: userid },
       });
       dobinfo.meta_value = dob;
       dobinfo.save();
@@ -383,16 +364,16 @@ const updateUser = async (req, res) => {
 
 
     if (facebook_link) {
-      let facebook_linkinfo = await UserMeta.findOne({
-        where: { meta_key: "facebook_link", user_id: userId },
+      let facebook_linkinfo = await UserExtention.findOne({
+        where: { meta_key: "facebook_link", user_id: userid },
       });
       facebook_linkinfo.meta_value = facebook_link;
       facebook_linkinfo.save();
     }
 
     if (twitter_username) {
-      let twitter_usernameinfo = await UserMeta.findOne({
-        where: { meta_key: "twitter_username", user_id: userId },
+      let twitter_usernameinfo = await UserExtention.findOne({
+        where: { meta_key: "twitter_username", user_id: userid },
       });
       twitter_usernameinfo.meta_value = twitter_username;
       twitter_usernameinfo.save();
@@ -413,51 +394,44 @@ const updateUser = async (req, res) => {
 //handler for logged in user...
 const login = async (req, res) => {
   console.log("login", req.body);
-  const { user_pass, user_email } = req.body;
+  const { email, password } = req.body;
 
   try {
     //checking email registerd or not...
-    const user = await User.findOne({ where: { user_email: user_email } });
+    const user = await User.findOne({ where: { email: email } });
     if (!user) {
       return res.status(400).json({ error: true, msg: "Invalid credentials." });
     }
-    const userMeta = await UserMeta.findOne({
-      where: { meta_key: "bden_capabilities", user_id: user.ID },
-    });
-    if (!userMeta) {
-      return res.status(400).json({ error: true, msg: "Invalid credentials." });
-    }
-
     //checking for password match..
-    const isMatched = await bcrypt.compare(user_pass, user.user_pass);
+    const isMatched = await bcrypt.compare(password, user.password);
     if (!isMatched) {
       return res.status(400).json({ error: true, msg: "Invalid credentials" });
     }
+    //checking permission
+    const userExtention = await UserExtention.findOne({
+      where: { meta_key: "permission", user_id: user.id },
+    });
+    if (!userExtention) {
+      return res.status(400).json({ error: true, msg: "Invalid credentials." });
+    }
 
-    //create and store refresh token into db...
-
+    //create payload 
     const payload = {
       user: {
-        ID: user.ID,
-        user_login: user.user_login,
-        user_email: user.user_email,
-        permission: userMeta.meta_value,
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        permission: userExtention.meta_value,
       },
     };
 
-    console.log(payload);
-
     //let token = "";
-    jwt.sign(
-      payload,
-      process.env.JWTSECRET,
-      { expiresIn: "24h" },
-      (err, token) => {
-        if (err) {
-          throw err;
+    jwt.sign( payload, process.env.JWTSECRET, { expiresIn: "24h" }, { algorithm: 'RS256' },
+      (error, token) => {
+        if (error) {
+          throw error;
         }
-
-
+        console.log(token);
         return res.status(200).json({
           error: false,
           accessToken: token,
@@ -466,9 +440,8 @@ const login = async (req, res) => {
         });
       }
     );
-  } catch (err) {
-    //check for possible error...
-    console.log(err);
+  } catch (error) {
+    console.log(error);
     return res.status(500).json({ error: true, msg: "Server error." });
   }
 };
@@ -495,3 +468,14 @@ const verifyToken = (req, res) => {
 }
 
 module.exports = { getAllUser, getUser, register, updateUser, login, protect, verifyToken };
+
+
+
+    // if (!user_pass) {
+    //   const password = generator.generate({
+    //     length: 10,
+    //     numbers: true
+    //   });
+    //   user_pass = password;
+    //   console.log(password);
+    // }

@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const env = require('dotenv').config();
-const bodyParser = require('body-parser');
 const path = require('path');
 
 const app = express();
@@ -12,7 +11,7 @@ const app = express();
 const sequelize = require('./utils/DB')
 
 //serve static files
-app.use(express.static(path.join(__dirname, '/uploads/')));
+//app.use(express.static(path.join(__dirname, '/uploads/')));
 
 //init all middlewares
 
@@ -30,9 +29,10 @@ app.use('/api/v1/user', require('./routes/User'));
 // app.get('/', (req, res) => {
 //     res.status(200).json('hello')
 // })
+
 //default error page
 app.use((req, res, next) => {
-    res.status(404).json({ "res": "Sorry can't find that!" });
+    res.status(404).json({ "res": "Sorry can't find Route!" });
 });
 
 

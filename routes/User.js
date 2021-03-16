@@ -7,7 +7,7 @@ const UserAuthController = require('../controllers/UserAuthController');
 //init Router 
 const router = express.Router();
 
-router.post('/register', form, UserAuthController.register);
+router.post('/register', uploadAvatar, UserAuthController.register);
 router.post('/login', form,  UserAuthController.login);
 router.get("/all-users", UserAuthController.getAllUser);
 router.get("/:ID", UserAuthController.getUser);

@@ -45,6 +45,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(250),
         allowNull: false,
       },
+      avatar: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       tableName: "bden_users",
