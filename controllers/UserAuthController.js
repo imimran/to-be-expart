@@ -3,9 +3,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const moment = require("moment");
 const { Op } = require("sequelize");
-const { getMatchedValue } = require("../helpers/MatchPermission");
+//const { getMatchedValue } = require("../helpers/MatchPermission");
 const { UserExtention, User } = require("../utils/DB");
-
 
 const getAllUser = async (req, res) => {
   try {
@@ -15,9 +14,9 @@ const getAllUser = async (req, res) => {
     const users = await User.findAll({
       attributes: [
         "id",
-        "user_login",
-        "user_email",
-        "user_registered",
+        "username",
+        "email",
+        "created_at",
         "display_name",
       ],
 
@@ -26,25 +25,14 @@ const getAllUser = async (req, res) => {
           model: UserExtention,
           attributes: ["user_id", ["meta_value", "role"]],
           where: {
-            meta_key: "bden_capabilities",
+            meta_key: "permission",
           },
         },
       ],
       order: [["id", "DESC"]],
     });
-
-    let userData = [];
-    for (let index = 0; index < users.length; index++) {
-      let user = users[index];
-      let role = getMatchedValue(
-        users[index].dataValues.bden_UserExtention[0].dataValues.role,
-        roles
-      );
-      user.dataValues.bden_UserExtention[0].dataValues.role = role;
-      userData.push(user);
-    }
-
-    return res.status(200).json({ error: false, userList: userData });
+    //console.log("users", users[0].dataValues.bden_user_extentions[0].dataValues);
+    return res.status(200).json({ error: false, users: users });
   } catch (error) {
     console.log(error);
 
@@ -59,26 +47,24 @@ const getUser = async (req, res) => {
       where: { id: userid },
       attributes: [
         "id",
-        "user_login",
-        "user_email",
-        "user_registered",
+        "username",
+        "email",
+        "created_at",
         "display_name",
       ],
 
     });
 
-    const userMata_info = await UserExtention.findAll();
+    const userExtention = await UserExtention.findAll({where: {user_id: req.params.id}} );
 
-    let userMata_info_arr = {};
-
-
-    for await (info of userMata_info) {
-      userMata_info_arr[info.meta_key] = info.meta_value;
+    let userExtention_info = {};
+    for await (info of userExtention) {
+      userExtention_info[info.meta_key] = info.meta_value;
     }
 
-    console.log('userMata_info_arr', userMata_info_arr)
+    console.log('userExtention_info', userExtention_info)
 
-    return res.status(200).json({ error: false, user: user, user_info: userMata_info_arr });
+    return res.status(200).json({ error: false, user: user, user_info: userExtention_info });
   } catch (error) {
     console.log(error);
 
@@ -174,7 +160,7 @@ const register = async (req, res) => {
     await UserExtention.create({
       user_id: newUser.id,
       meta_key: "avatar",
-      meta_value,
+      meta_value:newUser.avatar,
     });
 
     await UserExtention.create({
@@ -186,6 +172,12 @@ const register = async (req, res) => {
     await UserExtention.create({
       user_id: newUser.id,
       meta_key: "address",
+      meta_value,
+    });
+
+    await UserExtention.create({
+      user_id: newUser.id,
+      meta_key: "phone",
       meta_value,
     });
 
@@ -224,40 +216,38 @@ const updateUser = async (req, res) => {
     }
 
     const {
-      user_pass,
-      user_email,
-      user_url,
-      user_nicename,
+     
+      email,
+      password,
+      website,
       first_name,
-      nickname,
       last_name,
-      description,
-      bden_capabilities,
-      role,
+      nickname,
       avatar,
-      meta_value,
+      permission,
+      role,
       phone,
       address,
       dob,
-      facebook_link,
-      twitter_username,
+      facebook,
+      twitter,
 
     } = req.body;
 
     if (
-      user_nicename == "" ||
-      user_nicename == null ||
-      user_nicename == undefined
+      nickname == "" ||
+      nickname == null ||
+      nickname == undefined
     ) {
       return res
         .status(200)
         .json({ error: true, msg: "Nickname is requrired." });
     }
-    if (user_email == "" || user_email == null || user_email == undefined) {
+    if (email == "" || email == null || email == undefined) {
       return res.status(200).json({ error: true, msg: "Email is requrired." });
     }
-    if (user_pass) {
-      user_password = bcrypt.hashSync(user_pass, 12, (err, hash) => {
+    if (password) {
+      user_password = bcrypt.hashSync(password, 12, (err, hash) => {
         if (err) {
           throw err;
         }
@@ -265,8 +255,8 @@ const updateUser = async (req, res) => {
       });
     }
 
-    if (req.body.user_email !== old_user.user_email) {
-      user_mail = await User.findOne({ where: { user_email: user_email } });
+    if (req.body.email !== old_user.email) {
+      user_mail = await User.findOne({ where: { email: email } });
       if (user_mail) {
         return res
           .status(400)
@@ -274,25 +264,27 @@ const updateUser = async (req, res) => {
       }
     }
 
-    old_user.user_nicename = user_nicename;
-    if (user_pass) {
-      old_user.user_pass = user_password;
+    old_user.nickname = nickname;
+    if (password) {
+      old_user.password = user_password;
     }
-    old_user.user_email = user_email;
+    old_user.email = email;
+ 
+    old_user.display_name = first_name + " " + last_name;
+    
+    old_user.website = website;
 
-    if (first_name || last_name) {
-      old_user.display_name = first_name + " " + last_name;
+    if (req.file) {
+      console.log(req.file);
+      old_user.avatar = req.file.filename;  
     }
-    old_user.user_url = user_url;
-
     await old_user.save();
 
-    console.log("old_user", old_user.user_nicename);
 
     let nicknameinfo = await UserExtention.findOne({
       where: { meta_key: "nickname", user_id: userid },
     });
-    nicknameinfo.meta_value = old_user.user_nicename;
+    nicknameinfo.meta_value = old_user.nickname;
     nicknameinfo.save();
 
     if (first_name) {
@@ -313,20 +305,20 @@ const updateUser = async (req, res) => {
       last_nameinfo.meta_value = last_name;
       last_nameinfo.save();
     }
-    if (description) {
-      let descriptioninfo = await UserExtention.findOne({
-        where: { meta_key: "description", user_id: userid },
+    if (bio) {
+      let bioinfo = await UserExtention.findOne({
+        where: { meta_key: "bio", user_id: userid },
       });
-      descriptioninfo.meta_value = description;
-      descriptioninfo.save();
+      bioinfo.meta_value = bio;
+      bioinfo.save();
     }
 
-    if (bden_capabilities) {
-      let bden_capabilitiesinfo = await UserExtention.findOne({
-        where: { meta_key: "bden_capabilities", user_id: userid },
+    if (permission) {
+      let permissioninfo = await UserExtention.findOne({
+        where: { meta_key: "permission", user_id: userid },
       });
-      bden_capabilitiesinfo.meta_value = bden_capabilities;
-      bden_capabilitiesinfo.save();
+      permissioninfo.meta_value = permission;
+      permissioninfo.save();
     }
 
     if (req.file) {
@@ -334,7 +326,7 @@ const updateUser = async (req, res) => {
       let avatarinfo = await UserExtention.findOne({
         where: { meta_key: "avatar", user_id: userid },
       });
-      avatarinfo.meta_value = req.file.filename;
+      avatarinfo.meta_value = avatar;
       avatarinfo.save();
     }
 
@@ -363,30 +355,29 @@ const updateUser = async (req, res) => {
     }
 
 
-    if (facebook_link) {
-      let facebook_linkinfo = await UserExtention.findOne({
-        where: { meta_key: "facebook_link", user_id: userid },
+    if (facebook) {
+      let facebookinfo = await UserExtention.findOne({
+        where: { meta_key: "facebook", user_id: userid },
       });
-      facebook_linkinfo.meta_value = facebook_link;
-      facebook_linkinfo.save();
+      facebookinfo.meta_value = facebook;
+      facebookinfo.save();
     }
 
-    if (twitter_username) {
-      let twitter_usernameinfo = await UserExtention.findOne({
-        where: { meta_key: "twitter_username", user_id: userid },
+    if (twitter) {
+      let twitterinfo = await UserExtention.findOne({
+        where: { meta_key: "twitter", user_id: userid },
       });
-      twitter_usernameinfo.meta_value = twitter_username;
-      twitter_usernameinfo.save();
+      twitterinfo.meta_value = twitter;
+      twitterinfo.save();
     }
-
 
     return res.status(200).json({
       error: false,
       //data: updateUser,
       msg: "Profile updated successfully.",
     });
-  } catch (err) {
-    console.log(err);
+  } catch (error) {
+    console.log(error);
     return res.status(500).json({ error: true, msg: err });
   }
 };
@@ -426,7 +417,7 @@ const login = async (req, res) => {
     };
 
     //let token = "";
-    jwt.sign( payload, process.env.JWTSECRET, { expiresIn: "24h" }, { algorithm: 'RS256' },
+    jwt.sign( payload, process.env.JWTSECRET, { expiresIn: "24h" },
       (error, token) => {
         if (error) {
           throw error;

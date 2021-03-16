@@ -26,6 +26,14 @@ const User = UserModel(sequelize, Sequelize);
 const UserExtentionModel = require("../models/UserExtention");
 const UserExtention = UserExtentionModel(sequelize, Sequelize);
 
+
+//Define Relationship
+User.hasMany(UserExtention, {
+  onDelete: "CASCADE",
+  foreignKey: "user_id",
+
+});
+
 /*Generating the database table. If we set force:true then each and every
  *time when we start our application all tables will be drop from the
  *database and regenerate new. So beware of it before using it.

@@ -55,15 +55,6 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: false,
     });
 
-
-  User.associate = models => {
-    User.hasMany(models.UserExtention, {
-      onDelete: "CASCADE",
-      foreignKey: "user_id",
-    });
-
-  }
-
   return User;
 }
 

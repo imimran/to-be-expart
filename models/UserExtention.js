@@ -1,5 +1,9 @@
 "use strict";
 
+const User = require("./User");
+
+
+
 module.exports = (sequelize, DataTypes) => {
   const UserExtention = sequelize.define(
     "bden_user_extention",
@@ -27,6 +31,7 @@ module.exports = (sequelize, DataTypes) => {
       tableName: "bden_user_extention",
       timestamps: false,
     });
+
 
    return UserExtention;
   };
