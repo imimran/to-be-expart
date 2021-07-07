@@ -461,6 +461,17 @@ const verifyToken = (req, res) => {
 module.exports = { getAllUser, getUser, register, updateUser, login, protect, verifyToken };
 
 
+// const thumbnail = req.files.thumbnail[0].filename;
+//         const slider_image = req.files.slider_image;
+//         console.log("slider", req.files.slider_image[0].filename)
+//         let sliderImages = [];
+//         for (image of slider_image){
+//             const s_image = fullUrl + '/public/data/uploads/products' + image.filename;
+//             sliderImages.push(s_image);
+//         }
+//         const thumbnailImage = fullUrl + '/public/data/uploads/products' + thumbnail;
+
+
 
     // if (!user_pass) {
     //   const password = generator.generate({
